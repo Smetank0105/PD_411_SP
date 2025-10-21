@@ -156,11 +156,12 @@ public:
 					while (engine.started() && tank.get_fuel_level() > 0)
 					{
 						std::this_thread::sleep_for(std::chrono::seconds(1));
-						tank.fill(-engine.get_consumption_per_second());
-						cout << "Fuel remaining: " << tank.get_fuel_level() << " litres.\n";
+						tank.fill(-engine.get_consumption_per_second() * (1 + 10 * speed / MAX_SPEED));
+						panel();
 						if (tank.get_fuel_level() <= 0)
 						{
 							engine.stop();
+							panel();
 							cout << "Fuel is empty! Engine stoped.\n";
 							break;
 						}
@@ -176,6 +177,16 @@ public:
 			engine.stop();
 			if (consumption_future.valid()) consumption_future.get();
 		}
+	}
+	void increase_speed(int volume)
+	{
+		speed += volume;
+		if (speed > MAX_SPEED) speed = MAX_SPEED;
+	}
+	void reduce_speed(int volume)
+	{
+		speed -= volume;
+		if (speed < 0) speed = 0;
 	}
 	void control()
 	{
@@ -206,13 +217,13 @@ public:
 				stop_engine();
 				panel();
 				break;
-			case 'u':
-			case 'U':
-				cout << "faster\n";
+			case 'i':
+			case 'I':
+				increase_speed(30);
 				break;
-			case 'L':
-			case 'l':
-				cout << "slower\n";
+			case 'r':
+			case 'R':
+				reduce_speed(30);
 				break;
 			case Escape:
 				stop_engine();
@@ -229,6 +240,7 @@ public:
 			system("CLS");
 			cout << "Fuel level:\t" << tank.get_fuel_level() << " liters.\n";
 			cout << "Engine is " << (engine.started() ? "started" : "stopped") << endl;
+			cout << "Speed: " << speed << " km\h" << endl;
 		}
 		else {
 			cout << "Driver out" << endl;
