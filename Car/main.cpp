@@ -1,5 +1,8 @@
 #include <iostream>
 #include <conio.h>
+#include <future>
+#include <chrono>
+#include <thread>
 using std::cin;
 using std::cout;
 using std::endl;
@@ -25,11 +28,9 @@ public:
 	}
 	void fill(double fuel)
 	{
-		if (fuel < 0)
-			return;
 		fuel_level += fuel;
-		if (fuel_level > VOLUME)
-			fuel_level = VOLUME;
+		if (fuel_level < 0) fuel_level = 0;
+		if (fuel_level > VOLUME) fuel_level = VOLUME;
 	}
 	Tank(int volume) :
 		VOLUME
@@ -53,8 +54,8 @@ public:
 	}
 };
 
-#define MIN_EINGINE_CONSUPTION 5
-#define MAX_EINGINE_CONSUPTION 25
+#define MIN_ENGINE_CONSUMPTION 5
+#define MAX_ENGINE_CONSUMPTION 25
 
 class Engine
 {
@@ -62,15 +63,15 @@ class Engine
 	bool is_started;
 public:
 	const double CONSUMPTION;
-	double get_consumtion_per_second()const
+	double get_consumption_per_second()const
 	{
 		return consumption_per_second;
 	}
 	Engine(double consumption) :
 		CONSUMPTION
 		(
-			consumption < MIN_EINGINE_CONSUPTION ? MIN_EINGINE_CONSUPTION :
-			consumption > MAX_EINGINE_CONSUPTION ? MAX_EINGINE_CONSUPTION :
+			consumption < MIN_ENGINE_CONSUMPTION ? MIN_ENGINE_CONSUMPTION :
+			consumption > MAX_ENGINE_CONSUMPTION ? MAX_ENGINE_CONSUMPTION :
 			consumption
 		)
 	{
@@ -96,8 +97,8 @@ public:
 	}
 	void info()const
 	{
-		cout << "Consumption per 100 km:\t" << CONSUMPTION << " liters.\n";
-		cout << "Consumption per 1 sec:\t" << get_consumtion_per_second() << " liters.\n";
+		cout << "Consuption per 100 km:\t" << CONSUMPTION << " liters.\n";
+		cout << "Consuption per 1 sec:\t" << get_consumption_per_second() << " liters.\n";
 	}
 };
 
@@ -111,6 +112,7 @@ class Car
 	const int MAX_SPEED;
 	int speed;
 	bool driver_inside;
+	std::future<void> consumption_future;
 public:
 	Car(double consumption, int volume, int max_speed) :
 		engine(consumption),
@@ -138,7 +140,42 @@ public:
 	void get_out()
 	{
 		driver_inside = false;
+		stop_engine();
 		panel();
+	}
+	void start_engine()
+	{
+		if (!engine.started() && driver_inside && tank.get_fuel_level() > 0)
+		{
+			engine.start();
+			consumption_future = std::async
+			(
+				std::launch::async,
+				[this]()
+				{
+					while (engine.started() && tank.get_fuel_level() > 0)
+					{
+						std::this_thread::sleep_for(std::chrono::seconds(1));
+						tank.fill(-engine.get_consumption_per_second());
+						cout << "Fuel remaining: " << tank.get_fuel_level() << " litres.\n";
+						if (tank.get_fuel_level() <= 0)
+						{
+							engine.stop();
+							cout << "Fuel is empty! Engine stoped.\n";
+							break;
+						}
+					}
+				}
+			);
+		}
+	}
+	void stop_engine()
+	{
+		if (engine.started())
+		{
+			engine.stop();
+			if (consumption_future.valid()) consumption_future.get();
+		}
 	}
 	void control()
 	{
@@ -159,7 +196,18 @@ public:
 				cout << "How much do you want? "; cin >> amount;
 				tank.fill(amount);
 				break;
+			case 'S':
+			case 's':
+				start_engine();
+				panel();
+				break;
+			case 'P':
+			case 'p':
+				stop_engine();
+				panel();
+				break;
 			case Escape:
+				stop_engine();
 				break;
 			default:
 				break;
@@ -170,7 +218,7 @@ public:
 	{
 		if (driver_inside)
 		{
-			//system("CLS");
+			system("CLS");
 			cout << "Fuel level:\t" << tank.get_fuel_level() << " liters.\n";
 			cout << "Engine is " << (engine.started() ? "started" : "stopped") << endl;
 		}
