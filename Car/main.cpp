@@ -206,6 +206,14 @@ public:
 				stop_engine();
 				panel();
 				break;
+			case 'u':
+			case 'U':
+				cout << "faster\n";
+				break;
+			case 'L':
+			case 'l':
+				cout << "slower\n";
+				break;
 			case Escape:
 				stop_engine();
 				break;
