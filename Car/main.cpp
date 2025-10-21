@@ -53,8 +53,8 @@ public:
 	}
 };
 
-#define MIN_EINGINE_CONSUPTION 5
-#define MAX_EINGINE_CONSUPTION 25
+#define MIN_EINGINE_CONSUMPTION 5
+#define MAX_EINGINE_CONSUMPTION 25
 
 class Engine
 {
@@ -69,8 +69,8 @@ public:
 	Engine(double consumption) :
 		CONSUMPTION
 		(
-			consumption < MIN_EINGINE_CONSUPTION ? MIN_EINGINE_CONSUPTION :
-			consumption > MAX_EINGINE_CONSUPTION ? MAX_EINGINE_CONSUPTION :
+			consumption < MIN_EINGINE_CONSUMPTION ? MIN_EINGINE_CONSUMPTION :
+			consumption > MAX_EINGINE_CONSUMPTION ? MAX_EINGINE_CONSUMPTION :
 			consumption
 		)
 	{
